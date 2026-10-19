@@ -24,6 +24,15 @@ app = Flask(__name__)
 predictor = HousePricePredictor()
 
 
+@app.after_request
+def add_cors_headers(response):
+    """Enable Cross-Origin Resource Sharing (CORS) for external frontends and local dev servers."""
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
+    return response
+
+
 @app.route("/favicon.ico")
 def favicon():
     """Serves the application favicon."""
@@ -40,9 +49,11 @@ def home():
     return render_template("index.html")
 
 
-@app.route("/health", methods=["GET"])
+@app.route("/health", methods=["GET", "OPTIONS"])
 def health():
     """Service health and readiness check for Render, Docker, and monitoring."""
+    if request.method == "OPTIONS":
+        return "", 204
     is_ready = predictor.is_ready()
     return jsonify({
         "status": "healthy" if is_ready else "degraded",
@@ -51,13 +62,16 @@ def health():
     }), (200 if is_ready else 503)
 
 
-@app.route("/predict", methods=["POST"])
+@app.route("/predict", methods=["POST", "OPTIONS"])
 def predict():
     """
-    Processes valuation requests via JSON payload.
+    Processes valuation requests via JSON payload (or form data).
     Validates input schema, performs inference via XGBoost, converts target
     variable to USD ($100k scale), and returns estimate with Split Conformal Prediction Intervals.
     """
+    if request.method == "OPTIONS":
+        return "", 204
+
     if not predictor.is_ready():
         return jsonify({
             "success": False,
@@ -66,6 +80,9 @@ def predict():
 
     try:
         data = request.get_json(silent=True)
+        if data is None and request.form:
+            data = request.form.to_dict()
+
         if data is None:
             return jsonify({
                 "success": False,
@@ -109,15 +126,19 @@ def predict():
         }), 500
 
 
-@app.route("/api/importance", methods=["GET"])
+@app.route("/api/importance", methods=["GET", "OPTIONS"])
 def importance():
     """Returns model feature importance weights for Explainable AI (XAI) telemetry."""
+    if request.method == "OPTIONS":
+        return "", 204
     return jsonify(predictor.get_importance()), 200
 
 
-@app.route("/api/metrics", methods=["GET"])
+@app.route("/api/metrics", methods=["GET", "OPTIONS"])
 def metrics():
     """Returns verified model evaluation metrics computed on held-out test data."""
+    if request.method == "OPTIONS":
+        return "", 204
     metrics_data = predictor.get_metrics()
     if metrics_data:
         return jsonify(metrics_data), 200
@@ -127,9 +148,11 @@ def metrics():
     }), 404
 
 
-@app.route("/api/uncertainty", methods=["GET"])
+@app.route("/api/uncertainty", methods=["GET", "OPTIONS"])
 def uncertainty():
     """Returns conformal prediction interval parameters and empirical coverage."""
+    if request.method == "OPTIONS":
+        return "", 204
     return jsonify(predictor.uncertainty_data), 200
 
 

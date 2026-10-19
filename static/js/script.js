@@ -64,6 +64,17 @@ const FEATURE_DISPLAY_NAMES = {
 
 let importanceChartInstance = null;
 
+// Dynamic API endpoint resolution: handles same-origin (Flask/Render) or external origins (Live Server on 5500, file://, etc.)
+function getApiUrl(endpoint) {
+    if (window.location.protocol === 'file:') {
+        return `http://127.0.0.1:5000${endpoint}`;
+    }
+    if (window.location.port && !['5000', '80', '443'].includes(window.location.port)) {
+        return `http://${window.location.hostname || '127.0.0.1'}:5000${endpoint}`;
+    }
+    return endpoint;
+}
+
 // Initialize simple horizontal bar chart
 function initImportanceChart(features, weights) {
     const canvas = document.getElementById('importanceChart');
@@ -150,7 +161,7 @@ function initImportanceChart(features, weights) {
 // Fetch feature importances from server
 async function loadImportanceData() {
     try {
-        const response = await fetch('/api/importance');
+        const response = await fetch(getApiUrl('/api/importance'));
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         initImportanceChart(Object.keys(data), Object.values(data));
@@ -251,8 +262,21 @@ async function submitPredictionForm() {
     if (btnText) btnText.innerText = "Predicting Price...";
     if (btnSpinner) btnSpinner.classList.remove('hidden');
 
+    const priceEl = document.getElementById('outputPrice');
+    const compEl = document.getElementById('comparisonBadge');
+
+    // Only update to loading indicator if it hasn't rendered yet
+    if (priceEl && (priceEl.innerText === '$---,---' || priceEl.innerText === 'Unavailable')) {
+        priceEl.innerText = "Calculating...";
+    }
+    if (compEl && (compEl.innerText === 'Calculating...' || compEl.innerText === 'Server Unreachable')) {
+        compEl.innerText = "Connecting to Model...";
+        compEl.className = "text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-full";
+    }
+
     try {
-        const response = await fetch('/predict', {
+        const targetUrl = getApiUrl('/predict');
+        const response = await fetch(targetUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -268,7 +292,6 @@ async function submitPredictionForm() {
         const priceNum = data.prediction;
         const formattedPrice = data.formatted_prediction || `$${Number(priceNum).toLocaleString()}`;
 
-        const priceEl = document.getElementById('outputPrice');
         if (priceEl) priceEl.innerText = formattedPrice;
 
         if (data.range) {
@@ -283,7 +306,6 @@ async function submitPredictionForm() {
         const diffRatio = (priceNum - censusMedian) / censusMedian;
         const diffPct = Math.abs(diffRatio * 100).toFixed(0);
 
-        const compEl = document.getElementById('comparisonBadge');
         if (compEl) {
             if (diffRatio >= 0) {
                 compEl.innerText = `+${diffPct}% above California average ($206,855)`;
@@ -303,7 +325,23 @@ async function submitPredictionForm() {
 
     } catch (err) {
         console.error("Prediction error:", err);
-        showError(err.message || "Failed to calculate valuation. Please verify your inputs.");
+
+        // Reset valuation display to clear, unmistakable error state
+        if (priceEl) priceEl.innerText = "Unavailable";
+        if (compEl) {
+            compEl.innerText = "Server Unreachable";
+            compEl.className = "text-xs font-semibold text-rose-800 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-full";
+        }
+        const lowerEl = document.getElementById('lowerRange');
+        const upperEl = document.getElementById('upperRange');
+        if (lowerEl) lowerEl.innerText = "$---";
+        if (upperEl) upperEl.innerText = "$---";
+
+        let friendlyMsg = err.message;
+        if (err.name === 'TypeError' || err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
+            friendlyMsg = "Cannot connect to prediction server on port 5000. Please start the Flask backend using: python app.py";
+        }
+        showError(friendlyMsg);
     } finally {
         submitBtn.disabled = false;
         if (btnText) btnText.innerText = "Predict House Price";

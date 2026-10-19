@@ -279,3 +279,36 @@ def test_docker_and_ci_config_present():
         content = f.read()
         assert "gunicorn" in content
         assert "HEALTHCHECK" in content
+
+
+def test_cors_headers_and_options(client):
+    """Test that CORS headers and OPTIONS preflight requests are properly handled."""
+    # OPTIONS preflight
+    options_resp = client.open("/predict", method="OPTIONS")
+    assert options_resp.status_code == 204
+    assert options_resp.headers.get("Access-Control-Allow-Origin") == "*"
+    assert "POST" in options_resp.headers.get("Access-Control-Allow-Methods", "")
+
+    # GET health with CORS
+    health_resp = client.get("/health")
+    assert health_resp.headers.get("Access-Control-Allow-Origin") == "*"
+
+
+def test_predict_form_encoded(client):
+    """Test that /predict accepts form-encoded data as fallback."""
+    payload = {
+        "MedInc": "8.50",
+        "HouseAge": "32.0",
+        "AveRooms": "6.2",
+        "AveBedrms": "1.05",
+        "Population": "1200.0",
+        "AveOccup": "2.5",
+        "Latitude": "37.77",
+        "Longitude": "-122.42"
+    }
+    response = client.post("/predict", data=payload)
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["success"] is True
+    assert data["prediction"] > 50000.0
+
