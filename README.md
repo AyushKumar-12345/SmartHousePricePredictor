@@ -1,4 +1,4 @@
-# SmartHouse AI — California Property Valuation Engine
+# SmartHousePricePredictor — California Property Valuation Engine
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.1-black.svg)](https://flask.palletsprojects.com/)
@@ -20,7 +20,7 @@ A production-ready Machine Learning web application that predicts California res
 
 Real estate valuation requires synthesizing multi-dimensional spatial, structural, and demographic variables. Standard linear regression models struggle to capture non-linear geographic interactions, leading to severe underfitting.
 
-**SmartHouse AI** solves this by leveraging an ensemble **Gradient Boosted Decision Tree (GBDT)** architecture via XGBoost. Evaluated on a strictly held-out test split (4,128 records), the model achieves an **R² score of 0.8393**, outperforming the standard linear regression baseline (R² = 0.5758) by **+26.35 percentage points**, reducing prediction error to an average residual of **$30,245 (17.52% MAPE)**, and delivering distribution-free **Split Conformal Prediction Intervals** with verified 90.04% empirical coverage.
+**SmartHousePricePredictor** solves this by leveraging an ensemble **Gradient Boosted Decision Tree (GBDT)** architecture via XGBoost. Evaluated on a strictly held-out test split (4,128 records), the model achieves an **R² score of 0.8393**, outperforming the standard linear regression baseline (R² = 0.5758) by **+26.35 percentage points**, reducing prediction error to an average residual of **$30,245 (17.52% MAPE)**, and delivering distribution-free **Split Conformal Prediction Intervals** with verified 90.04% empirical coverage.
 
 ---
 

@@ -1,7 +1,7 @@
 {
   "name": "smarthousepricepredictor",
   "version": "1.0.0",
-  "description": "SmartHouse AI — California Property Valuation Engine",
+  "description": "SmartHousePricePredictor — California Property Valuation Engine",
   "scripts": {
     "build:css": "npx @tailwindcss/cli -i ./static/css/input.css -o ./static/css/tailwind.min.css --minify"
   },

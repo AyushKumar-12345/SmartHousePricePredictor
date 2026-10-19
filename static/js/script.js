@@ -1,5 +1,5 @@
 /**
- * SmartHouse AI — Client Controller
+ * SmartHousePricePredictor — Client Controller
  * Simple, friendly, and clean JavaScript for house price predictions.
  */
 

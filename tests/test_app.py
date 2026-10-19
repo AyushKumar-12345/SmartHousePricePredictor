@@ -24,7 +24,7 @@ def test_home_route(client):
     response = client.get("/")
     assert response.status_code == 200
     html = response.get_data(as_text=True)
-    assert "SmartHouse AI" in html
+    assert "SmartHousePricePredictor" in html
     assert "California House Price Predictor" in html
     assert "predictorForm" in html
     # Ensure Tailwind CDN warning script is not present
