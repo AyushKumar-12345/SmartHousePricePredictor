@@ -1,57 +1,141 @@
-from flask import Flask, render_template, request, jsonify
-import joblib
-import json
+"""
+SmartHousePricePredictor — Flask Application Entry Point
+Production-ready web service providing property valuation predictions,
+Explainable AI (XAI) feature importances, real model evaluation telemetry,
+and strict server-side schema validation.
+"""
+
 import os
+import logging
+from flask import Flask, render_template, request, jsonify, send_from_directory
+from src.validator import FEATURE_NAMES, validate_input_payload
+from src.predictor import HousePricePredictor
+
+# Configure application logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+logger = logging.getLogger("SmartHousePredictor")
 
 app = Flask(__name__)
 
-try:
-    model = joblib.load("models/model.pkl")
-except:
-    model = None
+# Initialize Predictor instance
+predictor = HousePricePredictor()
+
+
+@app.route("/favicon.ico")
+def favicon():
+    """Serves the application favicon."""
+    return send_from_directory(
+        os.path.join(app.root_path, "static"),
+        "favicon.svg",
+        mimetype="image/svg+xml"
+    )
+
 
 @app.route("/")
 def home():
+    """Serves the primary user interface."""
     return render_template("index.html")
+
+
+@app.route("/health", methods=["GET"])
+def health():
+    """Service health and readiness check for Render, Docker, and monitoring."""
+    is_ready = predictor.is_ready()
+    return jsonify({
+        "status": "healthy" if is_ready else "degraded",
+        "model_loaded": is_ready,
+        "features": FEATURE_NAMES
+    }), (200 if is_ready else 503)
+
 
 @app.route("/predict", methods=["POST"])
 def predict():
+    """
+    Processes valuation requests via JSON payload.
+    Validates input schema, performs inference via XGBoost, converts target
+    variable to USD ($100k scale), and returns estimate with Split Conformal Prediction Intervals.
+    """
+    if not predictor.is_ready():
+        return jsonify({
+            "success": False,
+            "error": "Model artifact is currently unavailable on the server. Please ensure models/model.pkl is trained."
+        }), 503
+
     try:
-        data = request.json
-        features = [
-            float(data.get("MedInc", 3.5)),
-            float(data.get("HouseAge", 28.0)),
-            float(data.get("AveRooms", 5.0)),
-            float(data.get("AveBedrms", 1.0)),
-            float(data.get("Population", 1400.0)),
-            float(data.get("AveOccup", 3.0)),
-            float(data.get("Latitude", 35.5)),
-            float(data.get("Longitude", -119.5))
-        ]
-        
-        if model:
-            prediction = model.predict([features])[0]
-            prediction_usd = float(prediction) * 100000
-        else:
-            prediction_usd = 250000.0
-            
-        return jsonify({"success": True, "prediction": round(prediction_usd, 2)})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 400
+        data = request.get_json(silent=True)
+        if data is None:
+            return jsonify({
+                "success": False,
+                "error": "Request body must be valid JSON with 'Content-Type: application/json'."
+            }), 400
+
+        features, validation_error = validate_input_payload(data)
+        if validation_error:
+            return jsonify({
+                "success": False,
+                "error": validation_error
+            }), 400
+
+        result = predictor.predict(features)
+
+        # Backwards compatible response schema for existing client controllers
+        response_payload = {
+            "success": True,
+            "prediction": result["prediction_usd"],
+            "formatted_prediction": result["formatted_prediction"],
+            "prediction_interval": result["prediction_interval_90"],
+            "range": {
+                "lower": result["prediction_interval_90"]["lower_usd"],
+                "upper": result["prediction_interval_90"]["upper_usd"],
+                "lower_formatted": result["prediction_interval_90"]["lower_formatted"],
+                "upper_formatted": result["prediction_interval_90"]["upper_formatted"],
+                "confidence_interval": "90% Conformal Prediction Interval (±$68,169)",
+                "margin_usd": result["prediction_interval_90"]["margin_usd"]
+            },
+            "benchmark": result["benchmark_comparison"],
+            "features_used": result["features_used"]
+        }
+
+        return jsonify(response_payload), 200
+
+    except Exception as exc:
+        logger.exception("Prediction calculation error: %s", exc)
+        return jsonify({
+            "success": False,
+            "error": "An internal error occurred while calculating the property valuation."
+        }), 500
+
 
 @app.route("/api/importance", methods=["GET"])
 def importance():
-    path = "models/importance.json"
-    if os.path.exists(path):
-        with open(path, "r") as f:
-            return jsonify(json.load(f))
+    """Returns model feature importance weights for Explainable AI (XAI) telemetry."""
+    return jsonify(predictor.get_importance()), 200
+
+
+@app.route("/api/metrics", methods=["GET"])
+def metrics():
+    """Returns verified model evaluation metrics computed on held-out test data."""
+    metrics_data = predictor.get_metrics()
+    if metrics_data:
+        return jsonify(metrics_data), 200
+
     return jsonify({
-        "MedInc": 0.5, "HouseAge": 0.15, "AveRooms": 0.1, 
-        "AveBedrms": 0.05, "Population": 0.05, "AveOccup": 0.1, 
-        "Latitude": 0.03, "Longitude": 0.02
-    })
+        "error": "Metrics file not found. Run train_model.py to generate."
+    }), 404
+
+
+@app.route("/api/uncertainty", methods=["GET"])
+def uncertainty():
+    """Returns conformal prediction interval parameters and empirical coverage."""
+    return jsonify(predictor.uncertainty_data), 200
+
 
 if __name__ == "__main__":
-    # Dynamically bind to the port environment variable specified by Render
+    # Render binds dynamically to the PORT environment variable
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    debug_mode = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
+    logger.info("Starting SmartHousePricePredictor on port %d (debug=%s)", port, debug_mode)
+    app.run(host="0.0.0.0", port=port, debug=debug_mode)

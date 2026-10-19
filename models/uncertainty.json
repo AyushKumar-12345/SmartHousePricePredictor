@@ -1,0 +1,17 @@
+{
+  "method": "Split Conformal Prediction (Inductive Conformal Regression)",
+  "assumptions": "Exchangeability of calibration and test instances; distribution-free coverage.",
+  "calibration_sample_size": 4128,
+  "prediction_interval_80": {
+    "target_coverage_pct": 80.0,
+    "empirical_coverage_pct": 80.04,
+    "margin_target_units": 0.4515,
+    "margin_usd": 45148.56
+  },
+  "prediction_interval_90": {
+    "target_coverage_pct": 90.0,
+    "empirical_coverage_pct": 90.04,
+    "margin_target_units": 0.6817,
+    "margin_usd": 68168.97
+  }
+}

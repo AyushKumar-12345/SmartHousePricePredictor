@@ -1,0 +1,18 @@
+{
+  "name": "smarthousepricepredictor",
+  "version": "1.0.0",
+  "description": "SmartHouse AI — California Property Valuation Engine",
+  "scripts": {
+    "build:css": "npx @tailwindcss/cli -i ./static/css/input.css -o ./static/css/tailwind.min.css --minify"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AyushKumar-12345/SmartHousePricePredictor.git"
+  },
+  "author": "Ayush Kumar",
+  "license": "MIT",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  }
+}

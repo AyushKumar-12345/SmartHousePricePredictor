@@ -1,0 +1,27 @@
+# Python caches and environments
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+
+# Node dependencies
+node_modules/
+package-lock.json
+
+# Test and coverage artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Version control
+.git/
+.gitignore
+
+# Local secrets & logs
+.env
+.env.local
+*.log
+.DS_Store
+Thumbs.db

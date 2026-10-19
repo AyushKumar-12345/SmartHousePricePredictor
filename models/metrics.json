@@ -1,0 +1,77 @@
+{
+  "dataset": {
+    "name": "California Housing Dataset (1990 US Census)",
+    "source": "Derived from 1990 U.S. Census block groups (Pace & Barry, 1997 via Scikit-learn)",
+    "total_samples": 20640,
+    "train_samples": 16512,
+    "test_samples": 4128,
+    "test_split_ratio": 0.2,
+    "random_state": 42,
+    "dataset_median_house_value_usd": 179700.0,
+    "dataset_mean_house_value_usd": 206855.81690891474,
+    "features": [
+      "MedInc",
+      "HouseAge",
+      "AveRooms",
+      "AveBedrms",
+      "Population",
+      "AveOccup",
+      "Latitude",
+      "Longitude"
+    ],
+    "target": "Price ($100,000 units)"
+  },
+  "xgboost_model": {
+    "algorithm": "XGBoost Regressor (Gradient Boosted Decision Trees)",
+    "hyperparameters": {
+      "n_estimators": 300,
+      "learning_rate": 0.05,
+      "max_depth": 6,
+      "subsample": 0.8,
+      "colsample_bytree": 0.8,
+      "random_state": 42
+    },
+    "r2_score": 0.8393,
+    "mae": 0.3025,
+    "mae_usd": 30245.42,
+    "mse": 0.2106,
+    "rmse": 0.4589,
+    "rmse_usd": 45894.34,
+    "mape_percent": 17.52
+  },
+  "conformal_uncertainty": {
+    "method": "Split Conformal Prediction (Inductive Conformal Regression)",
+    "assumptions": "Exchangeability of calibration and test instances; distribution-free coverage.",
+    "calibration_sample_size": 4128,
+    "prediction_interval_80": {
+      "target_coverage_pct": 80.0,
+      "empirical_coverage_pct": 80.04,
+      "margin_target_units": 0.4515,
+      "margin_usd": 45148.56
+    },
+    "prediction_interval_90": {
+      "target_coverage_pct": 90.0,
+      "empirical_coverage_pct": 90.04,
+      "margin_target_units": 0.6817,
+      "margin_usd": 68168.97
+    }
+  },
+  "baselines": {
+    "linear_regression": {
+      "r2_score": 0.5758,
+      "mae": 0.5332,
+      "mae_usd": 53320.01,
+      "rmse": 0.7456,
+      "rmse_usd": 74558.14,
+      "mape_percent": 31.95
+    },
+    "dummy_mean": {
+      "r2_score": -0.0002,
+      "mae": 0.9061,
+      "mae_usd": 90606.85,
+      "rmse": 1.1449,
+      "rmse_usd": 114485.64,
+      "mape_percent": 62.89
+    }
+  }
+}
