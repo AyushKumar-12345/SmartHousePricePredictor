@@ -46,7 +46,7 @@ Real estate valuation requires synthesizing multi-dimensional spatial, structura
 | **Frontend & UI/UX** | HTML5, Tailwind CSS (locally compiled), JavaScript (ES6+), Chart.js 4.4 |
 | **Uncertainty Estimation** | Split Conformal Prediction (Inductive Conformal Regression) |
 | **DevOps & Containers**| Docker, GitHub Actions CI/CD, Render Cloud Platform |
-| **Testing** | Pytest 9.1 (14 automated unit & integration tests) |
+| **Testing** | Pytest 9.1 (18 automated unit & integration tests) |
 
 ---
 
@@ -163,7 +163,7 @@ SmartHousePricePredictor/
 ├── templates/
 │   └── index.html             # Pure-white monochrome responsive valuation UI
 ├── tests/
-│   └── test_app.py            # 14 automated unit & integration tests (100% pass)
+│   └── test_app.py            # 18 automated unit & integration tests (100% pass)
 └── train_model.py             # Reproducible training, evaluation, & calibration pipeline
 ```
 
@@ -291,7 +291,7 @@ Returns service health status (`healthy`) and model readiness.
 
 1. **Why XGBoost over Ordinary Least Squares (OLS)?** California real estate exhibits severe non-linear spatial dependencies (proximity to coastal high-income clusters and employment centers) that linear models cannot resolve without manual interaction terms. XGBoost's ensemble trees partition multi-dimensional feature space adaptively, improving $R^2$ from $0.5758$ to $0.8393$ and reducing MAPE from $31.95\%$ to $17.52\%$.
 2. **Defensible Uncertainty (Conformal Prediction):** Rather than outputting arbitrary heuristics, I implemented **Split Conformal Prediction**. Calibrated on held-out residuals, it guarantees valid, distribution-free prediction intervals for individual properties with empirically verified $90.04\%$ coverage.
-3. **Modular Software Architecture:** The application separates concerns into `src/validator.py` (defensive schema and physical bounds checking) and `src/predictor.py` (inference and uncertainty quantification), covered by 14 automated pytest integration tests.
+3. **Modular Software Architecture:** The application separates concerns into `src/validator.py` (defensive schema and physical bounds checking) and `src/predictor.py` (inference and uncertainty quantification), covered by 18 automated pytest integration tests.
 4. **Production Web Engineering:** Built with a locally compiled, purged Tailwind CSS build (eliminating browser console CDN warnings), Gunicorn WSGI server, dynamic port binding, automated health checks, Docker containerization, and GitHub Actions CI.
 
 ---

@@ -268,7 +268,7 @@ def test_favicon_route(client):
 
 
 def test_docker_and_ci_config_present():
-    """Verify Docker, Compose, and CI/CD workflow configuration files exist."""
+    """Verify Docker, Compose, and CI/CD workflow configuration files exist and are configured."""
     import os
     assert os.path.exists("Dockerfile")
     assert os.path.exists(".dockerignore")
@@ -279,6 +279,15 @@ def test_docker_and_ci_config_present():
         content = f.read()
         assert "gunicorn" in content
         assert "HEALTHCHECK" in content
+    with open("docker-compose.yml", "r", encoding="utf-8") as f:
+        compose = f.read()
+        assert "5000:5000" in compose
+        assert "healthcheck" in compose
+    with open(".github/workflows/ci.yml", "r", encoding="utf-8") as f:
+        ci = f.read()
+        assert "test:" in ci
+        assert "docker:" in ci
+        assert "HEALTHCHECK" not in ci or "docker build" in ci
 
 
 def test_cors_headers_and_options(client):

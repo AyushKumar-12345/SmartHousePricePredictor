@@ -42,3 +42,37 @@ jobs:
       - name: Execute Pytest Suite
         run: |
           python -m pytest -v tests/
+
+  docker:
+    name: Docker Build & Container Health Verification
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: |
+          docker build -t smarthousepricepredictor:latest .
+
+      - name: Run Docker container & verify health
+        run: |
+          docker run -d -p 5000:5000 --name test-app smarthousepricepredictor:latest
+          for i in $(seq 1 30); do
+            STATUS=$(docker inspect --format='{{json .State.Health.Status}}' test-app 2>/dev/null || echo '"starting"')
+            if [ "$STATUS" = '"healthy"' ]; then
+              echo "Container reported healthy state!"
+              break
+            fi
+            echo "Waiting for container health check... ($i/30)"
+            sleep 1
+          done
+          curl -f http://localhost:5000/health || exit 1
+          curl -f -X POST http://localhost:5000/predict \
+            -H "Content-Type: application/json" \
+            -d '{"MedInc":8.5,"HouseAge":32,"AveRooms":6.2,"AveBedrms":1.05,"Population":1200,"AveOccup":2.5,"Latitude":37.77,"Longitude":-122.42}' || exit 1
+          echo "Docker container verification completed successfully!"
