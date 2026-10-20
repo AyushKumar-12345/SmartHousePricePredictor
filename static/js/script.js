@@ -77,6 +77,10 @@ function getApiUrl(endpoint) {
 
 // Initialize simple horizontal bar chart
 function initImportanceChart(features, weights) {
+    if (typeof Chart === 'undefined') {
+        console.warn("Chart.js is not loaded yet.");
+        return;
+    }
     const canvas = document.getElementById('importanceChart');
     if (!canvas) return;
 
@@ -260,19 +264,13 @@ async function submitPredictionForm() {
     // Show loading state
     submitBtn.disabled = true;
     if (btnText) btnText.innerText = "Predicting Price...";
-    if (btnSpinner) btnSpinner.classList.remove('hidden');
+    if (btnSpinner) {
+        btnSpinner.style.display = 'inline-block';
+        btnSpinner.classList.remove('hidden');
+    }
 
     const priceEl = document.getElementById('outputPrice');
     const compEl = document.getElementById('comparisonBadge');
-
-    // Only update to loading indicator if it hasn't rendered yet
-    if (priceEl && (priceEl.innerText === '$---,---' || priceEl.innerText === 'Unavailable')) {
-        priceEl.innerText = "Calculating...";
-    }
-    if (compEl && (compEl.innerText === 'Calculating...' || compEl.innerText === 'Server Unreachable')) {
-        compEl.innerText = "Connecting to Model...";
-        compEl.className = "text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-full";
-    }
 
     try {
         const targetUrl = getApiUrl('/predict');
@@ -292,7 +290,11 @@ async function submitPredictionForm() {
         const priceNum = data.prediction;
         const formattedPrice = data.formatted_prediction || `$${Number(priceNum).toLocaleString()}`;
 
-        if (priceEl) priceEl.innerText = formattedPrice;
+        if (priceEl) {
+            priceEl.innerText = formattedPrice;
+            priceEl.classList.add('price-pulse');
+            setTimeout(() => priceEl.classList.remove('price-pulse'), 300);
+        }
 
         if (data.range) {
             const lowerEl = document.getElementById('lowerRange');
@@ -345,12 +347,22 @@ async function submitPredictionForm() {
     } finally {
         submitBtn.disabled = false;
         if (btnText) btnText.innerText = "Predict House Price";
-        if (btnSpinner) btnSpinner.classList.add('hidden');
+        if (btnSpinner) {
+            btnSpinner.style.display = 'none';
+            btnSpinner.classList.add('hidden');
+        }
     }
 }
 
 // Initialize on DOM load
 document.addEventListener('DOMContentLoaded', () => {
+    // Ensure spinner is strictly hidden on initial page paint
+    const btnSpinner = document.getElementById('btnSpinner');
+    if (btnSpinner) {
+        btnSpinner.style.display = 'none';
+        btnSpinner.classList.add('hidden');
+    }
+
     const form = document.getElementById('predictorForm');
     if (form) {
         form.addEventListener('submit', (e) => {

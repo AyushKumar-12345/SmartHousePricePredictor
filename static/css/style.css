@@ -105,6 +105,11 @@ input[type=number] {
     display: inline-block;
 }
 
+.spinner.hidden,
+.hidden {
+    display: none !important;
+}
+
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
@@ -114,6 +119,11 @@ input[type=number] {
 .price-display {
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.price-pulse {
+    transform: scale(1.03);
 }
 
 /* Subtle Grid Accent Pattern */
